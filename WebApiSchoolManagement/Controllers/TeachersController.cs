@@ -44,9 +44,13 @@ namespace WebApiSchoolManagement.Controllers
         [HttpPost]
         public async Task<ActionResult> CreateTeacher(TeacherCreationDTO teacherCreationDTO) 
         {
-            var teacher = mapper.Map<Teachers>(teacherCreationDTO);
-            var user = mapper.Map<Users>(teacherCreationDTO);
+            Teachers teacher = mapper.Map<Teachers>(teacherCreationDTO);
+            Users user = mapper.Map<Users>(teacherCreationDTO);
 
+            if (!ModelState.IsValid) 
+            {
+                return BadRequest();
+            }
 
             //Beginning of user fields
 

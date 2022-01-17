@@ -7,9 +7,9 @@ namespace WebApiSchoolManagement.Models
     {
 
         public int id { get; set; }
-        [Required]
+        [Required(ErrorMessage = "Nombre es requerido")]
         public string teachername { get; set; }
-        [Required]
+        [Required(ErrorMessage = "ID de usuario es requerido")]
         public int idUser { get; set; }
         [NotMapped]
         public Users user { get; set; }
