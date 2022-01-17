@@ -11,7 +11,6 @@ namespace WebApiSchoolManagement.Models
         public string teachername { get; set; }
         [Required]
         public int idUser { get; set; }
-
         [NotMapped]
         public Users user { get; set; }
     }

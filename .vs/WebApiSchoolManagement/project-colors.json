@@ -1,0 +1,16 @@
+{
+  "Version": 1,
+  "ProjectMap": {
+    "9bed8b4c-fc57-4ce5-a050-28d0e9a85910": {
+      "ProjectGuid": "9bed8b4c-fc57-4ce5-a050-28d0e9a85910",
+      "DisplayName": "WebApiSchoolManagement",
+      "ColorIndex": 0
+    },
+    "a2fe74e1-b743-11d0-ae1a-00a0c90fffc3": {
+      "ProjectGuid": "a2fe74e1-b743-11d0-ae1a-00a0c90fffc3",
+      "DisplayName": "Miscellaneous Files",
+      "ColorIndex": -1
+    }
+  },
+  "NextColorIndex": 1
+}
