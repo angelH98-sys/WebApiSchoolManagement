@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace WebApiSchoolManagement.DTO
+namespace WebApiSchoolManagement.DTO.TeacherDTOs
 {
     public class TeacherCreationDTO
     {

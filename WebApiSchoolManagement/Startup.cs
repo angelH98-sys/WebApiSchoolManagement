@@ -16,7 +16,8 @@ namespace WebApiSchoolManagement
         {
 
             services.AddControllers()
-                .AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
+                .AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles)
+                .AddNewtonsoftJson();//to execute patch
 
             services.AddDbContext<ApplicationDBContext>(options => options.UseSqlServer(Configuration["connectionStrings:defaultConnection"]));
 
