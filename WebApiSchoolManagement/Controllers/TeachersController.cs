@@ -46,6 +46,7 @@ namespace WebApiSchoolManagement.Controllers
         [HttpPost]
         public async Task<ActionResult> CreateTeacher(TeacherCreationDTO teacherCreationDTO)
         {
+            //2 tables, 2 maps
             Teachers teacher = mapper.Map<Teachers>(teacherCreationDTO);
             Users user = mapper.Map<Users>(teacherCreationDTO);
 
@@ -175,22 +176,23 @@ namespace WebApiSchoolManagement.Controllers
         {
             Regex regex = new Regex(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$");
 
-            if (!regex.IsMatch(psswd)) 
+            if (!regex.IsMatch(psswd)) //Checking password format
             {
 
                 return BadRequest("Contrasenia debe contener almenos 8 caracteres, almenos 1 letra mayuscula, almenos 1 letra minuscula, almenos 1 número y algún símbolo @$!%*?&");
             }
 
+            //Getting initial data
             var teacher = await context.Teachers.FirstOrDefaultAsync(teacherDB => teacherDB.id == id);
 
-            if (teacher == null) 
+            if (teacher == null) //Checking if teacher exist
             {
                 return NotFound();
             }
 
             teacher.user = await context.Users.FirstOrDefaultAsync(userDB => userDB.id == teacher.idUser);
 
-            if (teacher.user == null) 
+            if (teacher.user == null) //Just in case, if user also is real
             {
                 return StatusCode(500, "Error al cargar informacion de usuarios");
             }

@@ -122,4 +122,3 @@ C:\Users\angel\source\repos\angelH98-sys\WebApiSchoolManagement\WebApiSchoolMana
 C:\Users\angel\source\repos\angelH98-sys\WebApiSchoolManagement\WebApiSchoolManagement\bin\Debug\net6.0\Microsoft.AspNetCore.Mvc.NewtonsoftJson.dll
 C:\Users\angel\source\repos\angelH98-sys\WebApiSchoolManagement\WebApiSchoolManagement\bin\Debug\net6.0\Newtonsoft.Json.dll
 C:\Users\angel\source\repos\angelH98-sys\WebApiSchoolManagement\WebApiSchoolManagement\bin\Debug\net6.0\Newtonsoft.Json.Bson.dll
-C:\Users\angel\source\repos\angelH98-sys\WebApiSchoolManagement\WebApiSchoolManagement\obj\Debug\net6.0\WebApiSchoolManagement.csproj.AssemblyReference.cache

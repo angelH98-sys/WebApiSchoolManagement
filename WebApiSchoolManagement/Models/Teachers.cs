@@ -11,7 +11,7 @@ namespace WebApiSchoolManagement.Models
         public string teachername { get; set; }
         [Required(ErrorMessage = "ID de usuario es requerido")]
         public int idUser { get; set; }
-        [NotMapped]
+        [ForeignKey("idUser")]
         public Users user { get; set; }
     }
 }
