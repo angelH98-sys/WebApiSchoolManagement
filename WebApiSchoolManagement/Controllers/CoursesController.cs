@@ -21,7 +21,7 @@ namespace WebApiSchoolManagement.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllCourses() 
+        public async Task<IActionResult> GetAllCourses()
         {
 
             var courses = new List<Courses>();
@@ -30,7 +30,7 @@ namespace WebApiSchoolManagement.Controllers
 
                 courses = await context.Courses.ToListAsync();
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 return StatusCode(500, "Ocurrio un error para listar cursos");
             }
@@ -39,7 +39,7 @@ namespace WebApiSchoolManagement.Controllers
         }
 
         [HttpGet("{id:int}", Name = "GetDetailedCourse")]
-        public async Task<ActionResult<CourseDetailedDTO>> GetDetailedCourse(int id) 
+        public async Task<ActionResult<CourseDetailedDTO>> GetDetailedCourse(int id)
         {
             var course = new Courses();
             try
@@ -58,7 +58,7 @@ namespace WebApiSchoolManagement.Controllers
                 course.assignments = await context.Assignments
                     .Where(assignmentsDB => assignmentsDB.idCourse == course.id)
                     .ToListAsync();
-                
+
                 //Then, get teacher enrolled by course
                 course.teacherEnrolleds = await context.TeachersEnrolleds
                     .Include(teacherEnrolledDB => teacherEnrolledDB.teacher)
@@ -67,7 +67,7 @@ namespace WebApiSchoolManagement.Controllers
                     .ToListAsync();
 
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 //In case of problems
                 return StatusCode(500, "Ocurrio un error para obtener detalle del curso");
@@ -77,7 +77,7 @@ namespace WebApiSchoolManagement.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateCourse([FromBody] CourseCreationDTO courseCreationDTO) 
+        public async Task<IActionResult> CreateCourse([FromBody] CourseCreationDTO courseCreationDTO)
         {
             //IDK why this doesnt apply automaticly, but it works
             if (!TryValidateModel(courseCreationDTO))
@@ -89,7 +89,7 @@ namespace WebApiSchoolManagement.Controllers
             try
             {
                 course = mapper.Map<Courses>(courseCreationDTO);
-                
+
                 course.coursename = course.coursename.ToUpper();
 
                 //Checking if some course has current coursename
@@ -108,7 +108,7 @@ namespace WebApiSchoolManagement.Controllers
                 await context.SaveChangesAsync();
 
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 //In case of problems
                 return StatusCode(500, "Ocurrio un problema para guardar el registro");
@@ -116,11 +116,11 @@ namespace WebApiSchoolManagement.Controllers
 
 
             return CreatedAtRoute("GetDetailedCourse", new { id = course.id }, mapper.Map<CourseDetailedDTO>(course));
-            
+
         }
 
         [HttpPatch("{id:int}")]
-        public async Task<IActionResult> PatchCourse(int id, [FromBody] JsonPatchDocument<CourseCreationDTO> patchDocument) 
+        public async Task<IActionResult> PatchCourse(int id, [FromBody] JsonPatchDocument<CourseCreationDTO> patchDocument)
         {
 
             if (patchDocument == null) //Checking if patch document has info
@@ -162,12 +162,48 @@ namespace WebApiSchoolManagement.Controllers
             {
                 await context.SaveChangesAsync();
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 //In case of disaster
                 return StatusCode(500, "Error al actualizar curso");
             }
 
+            return NoContent();
+        }
+
+        [HttpPost("{id:int}/enrollteacher/{teacherId:int}")]
+        public async Task<IActionResult> EnrollTeacherToCourse(int id, int teacherId) 
+        {
+
+            try
+            {
+                //Checking if client provied real ids
+                var isRealCourse = await context.Courses.AnyAsync(courseDB => courseDB.id == id);
+
+                var isRealTeacher = await context.Teachers.AnyAsync(teacherDB => teacherDB.id == teacherId);
+
+                if (!isRealCourse | !isRealTeacher)
+                {
+                    return NotFound();
+                }
+
+                //Setting teacherenrolled object
+                var teacherEnrolled = new TeachersEnrolleds()
+                {
+                    idCourse = id,
+                    idTeacher = teacherId,
+                    enrolledstatus = "Active"
+                };
+
+                context.Add(teacherEnrolled);
+
+                await context.SaveChangesAsync();
+
+            }
+            catch (Exception ex) 
+            {
+                return StatusCode(500, "No fue posible registrar maestro en el curso");
+            }
             return NoContent();
         }
     }

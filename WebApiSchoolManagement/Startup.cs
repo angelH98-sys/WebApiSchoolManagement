@@ -14,7 +14,6 @@ namespace WebApiSchoolManagement
 
         public void ConfigureServices(IServiceCollection services) 
         {
-
             services.AddControllers()
                 //.AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles)
                 .AddNewtonsoftJson(x => x.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);//to execute patch

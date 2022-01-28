@@ -55,6 +55,13 @@ namespace WebApiSchoolManagement.Utilities
 
             //->Create
             CreateMap<CourseCreationDTO, Courses>().ReverseMap();
+
+            //Assignments Maps
+            //->Read
+            CreateMap<Assignments, AssignmentByCourseDTO>();
+
+            //->Create
+            CreateMap<AssignmentCreationDTO, Assignments>().ReverseMap();
         }
 
         private List<AssignmentByCourseDTO> MapAssignmentByCourse(Courses course, CourseDetailedDTO courseDetailedDTO)
