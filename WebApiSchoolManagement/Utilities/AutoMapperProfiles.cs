@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using WebApiSchoolManagement.DTO.AssignmentDTOs;
 using WebApiSchoolManagement.DTO.CourseDTOs;
+using WebApiSchoolManagement.DTO.InscriptionDTOs;
 using WebApiSchoolManagement.DTO.StudentDTOs;
 using WebApiSchoolManagement.DTO.TeacherDTOs;
 using WebApiSchoolManagement.DTO.TeacherEnrolledDTOs;
@@ -62,6 +63,10 @@ namespace WebApiSchoolManagement.Utilities
 
             //->Create
             CreateMap<AssignmentCreationDTO, Assignments>().ReverseMap();
+
+            //Inscriptions Maps
+            //->Create
+            CreateMap<InscriptionCreationDTO, Inscriptions>().ReverseMap();
         }
 
         private List<AssignmentByCourseDTO> MapAssignmentByCourse(Courses course, CourseDetailedDTO courseDetailedDTO)
