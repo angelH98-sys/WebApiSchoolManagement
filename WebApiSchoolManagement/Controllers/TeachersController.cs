@@ -21,7 +21,7 @@ namespace WebApiSchoolManagement.Controllers
             this.context = context;
             this.mapper = mapper;
         }
-
+        /*
         [HttpGet]
         public async Task<List<Teachers>> GetAllTeachers()
         {
@@ -211,6 +211,6 @@ namespace WebApiSchoolManagement.Controllers
             }
 
             return NoContent();
-        }
+        }*/
     }
 }

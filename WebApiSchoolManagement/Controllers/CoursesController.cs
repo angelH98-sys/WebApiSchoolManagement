@@ -19,7 +19,7 @@ namespace WebApiSchoolManagement.Controllers
             this.context = context;
             this.mapper = mapper;
         }
-
+        /*
         [HttpGet]
         public async Task<IActionResult> GetAllCourses()
         {
@@ -205,6 +205,6 @@ namespace WebApiSchoolManagement.Controllers
                 return StatusCode(500, "No fue posible registrar maestro en el curso");
             }
             return NoContent();
-        }
+        }*/
     }
 }

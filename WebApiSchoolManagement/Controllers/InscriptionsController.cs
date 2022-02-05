@@ -18,7 +18,7 @@ namespace WebApiSchoolManagement.Controllers
             this.context = context;
             this.mapper = mapper;
         }
-
+        /*
         [HttpPost]
         public async Task<IActionResult> CreateInscription([FromBody] InscriptionCreationDTO inscriptionCreationDTO)
         {
@@ -67,6 +67,6 @@ namespace WebApiSchoolManagement.Controllers
                 return StatusCode(500, "No fue posible crear inscripcion");
             }
             return Ok();
-        }
+        }*/
     }
 }

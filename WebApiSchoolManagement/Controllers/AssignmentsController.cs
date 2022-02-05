@@ -19,7 +19,7 @@ namespace WebApiSchoolManagement.Controllers
             this.context = context;
             this.mapper = mapper;
         }
-
+        /*
         [HttpGet]
         public async Task<IActionResult> GetAssignmentsByCourse(int courseId)
         {
@@ -179,6 +179,6 @@ namespace WebApiSchoolManagement.Controllers
             }
 
             return true;
-        }
+        }*/
     }
 }

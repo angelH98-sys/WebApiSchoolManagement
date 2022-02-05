@@ -4,10 +4,10 @@ namespace WebApiSchoolManagement.DTO.TeacherDTOs
 {
     public class TeacherPatchDTO
     {
-        [Required(ErrorMessage = "Nombre es requerido")]
+        [Required]
         public string teachername { get; set; }
-        [Required(ErrorMessage = "Mail de usuario es requerido")]
-        [EmailAddress(ErrorMessage = "Formato de mail erróneo")]
+        [Required]
+        [EmailAddress]
         public string mail { get; set; }
     }
 }

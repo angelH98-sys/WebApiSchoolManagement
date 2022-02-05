@@ -16,9 +16,9 @@ namespace WebApiSchoolManagement.Utilities
         {
             //Teacher maps
             //->Create
-            CreateMap<TeacherCreationDTO, Teachers>();
-            CreateMap<TeacherCreationDTO, Users>();
-
+            CreateMap<TeacherCreationDTO, Teacher>();
+            //CreateMap<TeacherCreationDTO, Users>();
+            /*
             //->Read
             CreateMap<Teachers, TeacherDTO>()
                 .ForMember(teacherDTO => teacherDTO.username, options => options.MapFrom(teacher => teacher.user.username))
@@ -71,9 +71,9 @@ namespace WebApiSchoolManagement.Utilities
 
             //Grades Maps
             //->Create
-            CreateMap<Grades, GradeCreationDTO>().ReverseMap();
+            CreateMap<Grades, GradeCreationDTO>().ReverseMap();*/
         }
-
+        /*
         private List<AssignmentByCourseDTO> MapAssignmentByCourse(Courses course, CourseDetailedDTO courseDetailedDTO)
         {
 
@@ -122,5 +122,6 @@ namespace WebApiSchoolManagement.Utilities
 
             return result;
         }
+        */
     }
 }

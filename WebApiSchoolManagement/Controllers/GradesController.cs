@@ -18,7 +18,7 @@ namespace WebApiSchoolManagement.Controllers
             this.context = context;
             this.mapper = mapper;
         }
-
+        /*
         [HttpPost]
         public async Task<IActionResult> CreateGrade([FromBody] GradeCreationDTO gradeCreationDTO) 
         {
@@ -86,6 +86,6 @@ namespace WebApiSchoolManagement.Controllers
             avarage = avarage / (grades.Count() + 1);
 
             return avarage;
-        }
+        }*/
     }
 }
