@@ -14,45 +14,15 @@ namespace WebApiSchoolManagement.Controllers
         private readonly ApplicationDBContext context;
         private readonly IMapper mapper;
 
-        public AssignmentsController(ApplicationDBContext context, IMapper mapper)
+        public AssignmentsController(
+            ApplicationDBContext context,
+            IMapper mapper)
         {
             this.context = context;
             this.mapper = mapper;
         }
-        /*
-        [HttpGet]
-        public async Task<IActionResult> GetAssignmentsByCourse(int courseId)
-        {
 
-            var assignmentsByCourseDTO = new List<AssignmentByCourseDTO>();
-            try
-            {
-
-                //First, lets check if client provied us a real course id
-                var existCourse = await context.Courses
-                    .AnyAsync(coursesDB => coursesDB.id == courseId);
-
-                if (existCourse == false)
-                {
-                    return NotFound();
-                }
-
-                //Getting all assignments by course id
-                var assignments = await context.Assignments
-                    .Where(assignmentDB => assignmentDB.idCourse == courseId).ToListAsync();
-                //Then, mapping to assignmentsbycourseDTO
-                assignmentsByCourseDTO = mapper.Map<List<AssignmentByCourseDTO>>(assignments);
-
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "No fue posible obtener las asignaciones");
-            }
-
-            return Ok(assignmentsByCourseDTO);
-        }
-
-        [HttpPost]
+        [HttpPost("create")]
         public async Task<IActionResult> CreateAssignment(int courseId, [FromBody] AssignmentCreationDTO assignmentCreationDTO)
         {
             try
@@ -60,7 +30,7 @@ namespace WebApiSchoolManagement.Controllers
 
                 //First, lets check if client provied us a real course id
                 var existCourse = await context.Courses
-                    .AnyAsync(coursesDB => coursesDB.id == courseId);
+                    .AnyAsync(coursesDB => coursesDB.Id == courseId);
 
                 if (existCourse == false)
                 {
@@ -68,10 +38,10 @@ namespace WebApiSchoolManagement.Controllers
                 }
 
                 //Setting assignment objetc
-                var assignment = mapper.Map<Assignments>(assignmentCreationDTO);
-                assignment.assignmentname = assignment.assignmentname.ToUpper();
-                assignment.idCourse = courseId;
-                assignment.assignmentstatus = "Active";
+                var assignment = new Assignment();
+                assignment = mapper.Map<Assignment>(assignmentCreationDTO);
+                assignment.name = assignment.name.ToUpper();
+                assignment.CourseId = courseId;
 
                 //Checking if assignment name is available and if course value is enough
                 if (!isAssignmentnameAvailable(assignment) | !isEnoughAvailableValue(assignment))
@@ -86,38 +56,85 @@ namespace WebApiSchoolManagement.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, "Ocurrio un problema al crear asignacion");
+                return StatusCode(500, "Something goes wrong creating assignment");
             }
             return Ok();
         }
 
-        [HttpPatch("{id:int}")]
-        public async Task<IActionResult> PatchAssignment(int courseId, int id, JsonPatchDocument<AssignmentCreationDTO> patchDocument) 
+        private bool isAssignmentnameAvailable(Assignment assignment)
+        {
+            //Validating if assignment name is available
+            var availableAssignmentName = !context.Assignments.Where(assignmentDB =>
+                        assignmentDB.CourseId == assignment.CourseId &&
+                        assignmentDB.status == "Active" &&
+                        assignmentDB.Id != assignment.Id &&
+                        assignmentDB.name == assignment.name)
+                .Any();
+
+            if (availableAssignmentName == false)
+            {
+                ModelState.AddModelError("name", "Assignment name not available");
+                return false;
+            }
+            return true;
+        }
+
+
+        private bool isEnoughAvailableValue(Assignment assignment)
+        {
+            //Getting current value availability fron a course
+
+            //Firs, getting every coursevalue from assignments by courseid
+            var assignments = context.Assignments.Where(assignmentDB =>
+                        assignmentDB.CourseId == assignment.CourseId &&
+                        assignmentDB.status == "Active" &&
+                        assignmentDB.Id != assignment.Id)
+                .Select(assgn => new Assignment { coursevalue = assgn.coursevalue })
+                .ToList();
+
+            var availableValue = 100;
+
+            foreach (Assignment assgn in assignments)
+            {
+                availableValue -= assgn.coursevalue;
+            }
+
+            if (availableValue < assignment.coursevalue)
+            {
+                ModelState.AddModelError("coursevalue", "Assignment value not available");
+                return false;
+            }
+
+            return true;
+        }
+
+        [HttpPatch("patch/{id:int}")]
+        public async Task<IActionResult> PatchAssignment(int courseId, int id, JsonPatchDocument<AssignmentPatchDTO> patchDocument)
         {
             try
             {
 
-                var assignment = await context.Assignments
-                    .Where(assignmentDB => assignmentDB.idCourse == courseId)
-                    .FirstOrDefaultAsync(assignmentDB => assignmentDB.id == id);
+                var assignment = await context.Assignments.FirstOrDefaultAsync(assignmentDB => 
+                                assignmentDB.CourseId == courseId 
+                                && assignmentDB.Id == id);
 
                 if (assignment == null)
                 {
                     return NotFound();
                 }
 
-                var assignmentCreationDTO = mapper.Map<AssignmentCreationDTO>(assignment);
+                var assignmentPatchDTO = mapper.Map<AssignmentPatchDTO>(assignment);
 
-                patchDocument.ApplyTo(assignmentCreationDTO, ModelState);
+                patchDocument.ApplyTo(assignmentPatchDTO, ModelState);
 
-                if (!TryValidateModel(assignmentCreationDTO))
+                if (!TryValidateModel(assignmentPatchDTO))
                 {
                     return BadRequest(ModelState);
                 }
 
-                assignmentCreationDTO.assignmentname = assignmentCreationDTO.assignmentname.ToUpper();
+                assignmentPatchDTO.name = assignmentPatchDTO.name.ToUpper();
 
-                mapper.Map(assignmentCreationDTO, assignment);
+                mapper.Map(assignmentPatchDTO, assignment);
 
                 if (!isAssignmentnameAvailable(assignment) | !isEnoughAvailableValue(assignment))
                 {
@@ -127,58 +144,12 @@ namespace WebApiSchoolManagement.Controllers
                 await context.SaveChangesAsync();
 
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
-                return StatusCode(500, "No fue posible actualizar asignacion");
+                return StatusCode(500, "Something goes wrong updating assignment");
             }
             return NoContent();
         }
-
-        private bool isAssignmentnameAvailable(Assignments assignment) 
-        {
-            //Validating if assignment name is available
-            var availableAssignmentName = !context.Assignments.Where(assignmentDB => 
-                        assignmentDB.idCourse == assignment.idCourse &&
-                        assignmentDB.assignmentstatus == "Active" &&
-                        assignmentDB.id != assignment.id &&
-                        assignmentDB.assignmentname == assignment.assignmentname)
-                .Any();
-
-            if (availableAssignmentName == false)
-            {
-                ModelState.AddModelError("assignmentname", "Assignment name not available");
-                return false;
-            }
-            return true;
-        }
-
-
-        private bool isEnoughAvailableValue(Assignments assignment) 
-        {
-            //Getting current value availability fron a course
-
-            //Firs, getting every coursevalue from assignments by courseid
-            var assignments = context.Assignments.Where(assignmentDB => 
-                        assignmentDB.idCourse == assignment.idCourse &&
-                        assignmentDB.assignmentstatus == "Active" &&
-                        assignmentDB.id != assignment.id)
-                .Select(assgn => new Assignments { coursevalue = assgn.coursevalue })
-                .ToList();
-
-            var availableValue = 100;
-
-            foreach (Assignments assgn in assignments) 
-            {
-                availableValue -= assgn.coursevalue;
-            }
-
-            if (availableValue < assignment.coursevalue) 
-            {
-                ModelState.AddModelError("coursevalue", "Assignment value not available");
-                return false;
-            }
-
-            return true;
-        }*/
+       
     }
 }

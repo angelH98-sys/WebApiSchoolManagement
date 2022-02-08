@@ -49,6 +49,7 @@ namespace WebApiSchoolManagement.Utilities
                 .ForMember(studentPatchDTO => studentPatchDTO.mail, options => options.MapFrom(student => student.User.Email))
                 .ForMember(studentPatchDTO => studentPatchDTO.password, options => options.MapFrom(student => student.User.PasswordHash))
                 .ReverseMap();
+            
             //Course maps
             //->Create
             CreateMap<CourseCreationDTO, Course>();
@@ -58,9 +59,24 @@ namespace WebApiSchoolManagement.Utilities
 
             //->Patch
             CreateMap<CoursePatchDTO, Course>().ReverseMap();
+
+            //Assignments Maps
+            //->Read
+            CreateMap<Assignment, AssignmentByCourseDTO>().ReverseMap();
+
+            //->Create
+            CreateMap<AssignmentCreationDTO, Assignment>().ReverseMap();
+
+            //->Patch
+            CreateMap<AssignmentPatchDTO, Assignment>().ReverseMap();
+
+
+            //TeacherEnrolled Maps
+            //->Read
+            CreateMap<TeachersEnrolled, TeacherEnrolledByCourseDTO>()
+                .ForMember(teacherEnrolledDTO => teacherEnrolledDTO.name, options => options.MapFrom(teacherEnrolled => teacherEnrolled.Teacher.name))
+                .ForMember(teacherEnrolledDTO => teacherEnrolledDTO.username, options => options.MapFrom(teacherEnrolled => teacherEnrolled.Teacher.User.UserName));
             /*
-
-
             //TeacherEnrolled Maps
             //->Read
             CreateMap<Courses, CourseDetailedDTO>()
@@ -70,12 +86,7 @@ namespace WebApiSchoolManagement.Utilities
             //->Create
             CreateMap<CourseCreationDTO, Courses>().ReverseMap();
 
-            //Assignments Maps
-            //->Read
-            CreateMap<Assignments, AssignmentByCourseDTO>();
-
-            //->Create
-            CreateMap<AssignmentCreationDTO, Assignments>().ReverseMap();
+            
 
             //Inscriptions Maps
             //->Create

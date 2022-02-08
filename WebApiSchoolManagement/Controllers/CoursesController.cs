@@ -75,16 +75,16 @@ namespace WebApiSchoolManagement.Controllers
                     return NotFound();
                 }
                 //Then, get assignments by courseId
-                //course.assignments = await context.Assignments
-                //    .Where(assignmentsDB => assignmentsDB.idCourse == course.id)
-                //    .ToListAsync();
+                course.Assignments = await context.Assignments
+                    .Where(assignmentsDB => assignmentsDB.CourseId == course.Id)
+                    .ToListAsync();
 
                 //Then, get teacher enrolled by course
-                //course.teacherEnrolleds = await context.TeachersEnrolleds
-                //    .Include(teacherEnrolledDB => teacherEnrolledDB.teacher)
-                //    .ThenInclude(teacherDB => teacherDB.user)
-                //    .Where(teacherEnrolledDB => teacherEnrolledDB.idCourse == course.id)
-                //    .ToListAsync();
+                course.TeacherEnrolleds = await context.TeachersEnrolleds
+                    .Include(teacherEnrolledDB => teacherEnrolledDB.Teacher)
+                    .ThenInclude(teacherDB => teacherDB.User)
+                    .Where(teacherEnrolledDB => teacherEnrolledDB.CourseId == course.Id)
+                    .ToListAsync();
 
             }
             catch (Exception ex)
@@ -150,6 +150,60 @@ namespace WebApiSchoolManagement.Controllers
             }
 
             return NoContent();
+        }
+
+        [HttpPost("enroll/teacher/{teacherId:int}/course/{courseId:int}")]
+        public async Task<IActionResult> EnrollTeacherCourse(int teacherId, int courseId) 
+        {
+            try
+            {
+
+                //First, we check if both parameters (teacherId and courseId) are valid (if them exist and are Active)
+                var isValidTeacher = await context.Teachers.AnyAsync(teacherDB =>
+                                                    teacherDB.Id == teacherId
+                                                    && teacherDB.status == "Active");
+
+                if (!isValidTeacher)
+                {
+                    return BadRequest("Unable to enroll an inactive or nonexistent teacher");
+                }
+
+                var isValidCourse = await context.Courses.AnyAsync(courseDB =>
+                                                    courseDB.Id == courseId
+                                                    && courseDB.status == "Active");
+
+                if (!isValidCourse)
+                {
+                    return BadRequest("Unable to enroll an inactive or nonexistent course");
+                }
+
+                //Then, we check if already exist an enroll with both paramereters
+                var isTeacherAlreadyEnroll = await context.TeachersEnrolleds.AnyAsync(enrollDB =>
+                                                    enrollDB.CourseId == courseId
+                                                    && enrollDB.TeacherId == teacherId);
+
+                if (isTeacherAlreadyEnroll)
+                {
+                    return BadRequest("Teacher already enroll to specified course");
+                }
+
+
+                var teacherEnroll = new TeachersEnrolled()
+                {
+                    TeacherId = teacherId,
+                    CourseId = courseId
+                };
+
+                context.Add(teacherEnroll);
+
+                await context.SaveChangesAsync();
+
+            }
+            catch (Exception ex) 
+            {
+                return StatusCode(500, "Something goes wrong on teacher enrollment");
+            }
+            return Ok();
         }
     }
 }

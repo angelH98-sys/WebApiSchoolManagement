@@ -6,8 +6,8 @@ namespace WebApiSchoolManagement.DTO.TeacherEnrolledDTOs
     {
         public int id { get; set; }
         public string status { get; set; } = "Active";
-        public int idTeacher { get; set; }
-        public string teachername { get; set; }
+        public int TeacherId { get; set; }
+        public string name { get; set; }
         public string username { get; set; }
 
     }
