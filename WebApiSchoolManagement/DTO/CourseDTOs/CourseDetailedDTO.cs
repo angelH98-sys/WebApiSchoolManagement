@@ -7,7 +7,7 @@ namespace WebApiSchoolManagement.DTO.CourseDTOs
 {
     public class CourseDetailedDTO
     {
-        public int id { get; set; }
+        public int Id { get; set; }
         public string name { get; set; }
         public string status { get; set; }
         public int courseyear { get; set; }

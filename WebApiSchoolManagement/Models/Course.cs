@@ -8,7 +8,7 @@ namespace WebApiSchoolManagement.Models
         public int Id { get; set; }
         [Required]
         public string name { get; set; }
-        public string status { get; set; }
+        public string status { get; set; } = "Active";
         [Required]
         [Range(1, 9)]
         public int courseyear { get; set; }

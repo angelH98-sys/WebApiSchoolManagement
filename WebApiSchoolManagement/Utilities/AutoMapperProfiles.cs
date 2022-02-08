@@ -49,8 +49,16 @@ namespace WebApiSchoolManagement.Utilities
                 .ForMember(studentPatchDTO => studentPatchDTO.mail, options => options.MapFrom(student => student.User.Email))
                 .ForMember(studentPatchDTO => studentPatchDTO.password, options => options.MapFrom(student => student.User.PasswordHash))
                 .ReverseMap();
+            //Course maps
+            //->Create
+            CreateMap<CourseCreationDTO, Course>();
+
+            //->Read
+            CreateMap<Course, CourseDetailedDTO>().ReverseMap();
+
+            //->Patch
+            CreateMap<CoursePatchDTO, Course>().ReverseMap();
             /*
-            CreateMap<Users, StudentPatchDTO>().ReverseMap();
 
 
             //TeacherEnrolled Maps
