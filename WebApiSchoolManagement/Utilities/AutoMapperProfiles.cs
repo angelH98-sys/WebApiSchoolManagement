@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Identity;
 using WebApiSchoolManagement.DTO.AssignmentDTOs;
 using WebApiSchoolManagement.DTO.CourseDTOs;
 using WebApiSchoolManagement.DTO.GradeDTOs;
@@ -17,17 +18,20 @@ namespace WebApiSchoolManagement.Utilities
             //Teacher maps
             //->Create
             CreateMap<TeacherCreationDTO, Teacher>();
-            //CreateMap<TeacherCreationDTO, Users>();
-            /*
+            
             //->Read
-            CreateMap<Teachers, TeacherDTO>()
-                .ForMember(teacherDTO => teacherDTO.username, options => options.MapFrom(teacher => teacher.user.username))
-                .ForMember(teacherDTO => teacherDTO.mail, options => options.MapFrom(teacher => teacher.user.mail));
+            CreateMap<Teacher, TeacherDetailedDTO>()
+                .ForMember(teacherDTO => teacherDTO.username, options => options.MapFrom(teacher => teacher.User.UserName))
+                .ForMember(teacherDTO => teacherDTO.mail, options => options.MapFrom(teacher => teacher.User.Email));
+            CreateMap<Teacher, TeacherDTO>()
+                .ForMember(teacherDTO => teacherDTO.username, options => options.MapFrom(teacher => teacher.User.UserName));
             
             //->Patch
-            CreateMap<Teachers, TeacherPatchDTO>()
-                .ForMember(TeacherPatchDTO => TeacherPatchDTO.mail, options => options.MapFrom(teacher => teacher.user.mail))
+            CreateMap<Teacher, TeacherPatchDTO>()
+                .ForMember(TeacherPatchDTO => TeacherPatchDTO.mail, options => options.MapFrom(teacher => teacher.User.Email))
+                .ForMember(TeacherPatchDTO => TeacherPatchDTO.password, options => options.MapFrom(teacher => teacher.User.PasswordHash))
                 .ReverseMap();
+            /*
             CreateMap<Users, TeacherPatchDTO>().ReverseMap();
 
 
