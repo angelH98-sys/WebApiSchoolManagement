@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using System.Text.RegularExpressions;
 using WebApiSchoolManagement.DTO.StudentDTOs;
 using WebApiSchoolManagement.Models;
@@ -15,214 +17,236 @@ namespace WebApiSchoolManagement.Controllers
     {
         private readonly ApplicationDBContext context;
         private readonly IMapper mapper;
+        private readonly UserManager<IdentityUser> userManager;
+        private readonly HashService hashService;
+        private readonly RoleManager<IdentityRole> roleManager;
+        private readonly string role = "Student";
 
-        public StudentsController(ApplicationDBContext context, IMapper mapper)
+        public StudentsController(
+            ApplicationDBContext context,
+            IMapper mapper,
+            UserManager<IdentityUser> userManager,
+            HashService hashService,
+            RoleManager<IdentityRole> roleManager)
         {
             this.context = context;
             this.mapper = mapper;
+            this.userManager = userManager;
+            this.hashService = hashService;
+            this.roleManager = roleManager;
         }
-        /*
-        [HttpGet]
-        public async Task<IActionResult> GetAllStudents()
+
+        [HttpPost("create")]
+        public async Task<IActionResult> CreateStudent([FromBody] StudentCreationDTO studentCreationDTO)
         {
-            var studentList = new List<Students>();
+            var student = mapper.Map<Student>(studentCreationDTO);
             try
             {
-                //Getting students and users
-                studentList = await context.Students
-                    .Include(studentDB => studentDB.user)
-                    .ToListAsync();
+                //Starting with student mapping
+                var username = "";
+                do
+                {
+                    //Checking if username generated is available
+                    username = UsernameGenerator.Genarate(student.name);
+                } while (await userManager.FindByNameAsync(username) != null);
 
-            } catch (Exception ex)
-            {//Just if last query fails, generic error
-                return StatusCode(500, "Error al cargar estudiantes");
+
+                var isMailAvailable = await userManager.FindByEmailAsync(studentCreationDTO.mail);
+                //Checking if user mail is available
+                if (isMailAvailable != null)
+                {
+                    return BadRequest("Mail address not available");
+                }
+
+                student.User = await CreateUser(username, studentCreationDTO.mail, studentCreationDTO.password);
+
+                if (student.User == null)
+                    //If user creation is successfull
+                {
+                    return StatusCode(500, "Something goes wrong on user creation");
+                }
+
+                student.UserId = student.User.Id;
+
+                context.Add(student);
+                
+                await context.SaveChangesAsync();
+                
+            }
+            catch (Exception ex) 
+            {
+                return StatusCode(500, "Something goes wrong on student creation");
             }
 
-            var studentDTOList = mapper.Map<List<StudentDTO>>(studentList);//Executing mapping
 
-            return Ok(studentDTOList);
+            return CreatedAtRoute("GetStudent", new { id = student.Id }, mapper.Map<StudentDTO>(student));
+
         }
 
-        [HttpGet("{id:int}", Name = "GetStudent")]
+        private async Task<IdentityUser> CreateUser(string username, string mail, string password)
+        /*Method to create Users in Identity Framework Tables
+            -AspNetRoles: to create user roles as Admin, Teacher or Student
+            -AspNetUsers: to create users
+            -AspNetUserClaims: to create a user claim to save password salt
+            -AspnetUserRole: to asign a role to a user
+         */
+        {
+            try
+            {
+
+                IdentityUser user = new IdentityUser()
+                //First, create an IdentityUser instance
+                {
+                    UserName = username,
+                    Email = mail
+                };
+
+                var passwordHash = hashService.Hash(password);//Making a hash for password
+
+                var roleExist = await roleManager.RoleExistsAsync(role);
+
+                //Checkin if a role exist
+                if (!roleExist)
+                {
+                    //If doesnt, then create one 
+                    await roleManager.CreateAsync(new IdentityRole(role));
+                }
+
+                await userManager.CreateAsync(user, passwordHash.Hash);//Create a user
+
+                await userManager.AddToRoleAsync(user, role);//Assigning role to the user
+
+                await userManager.AddClaimAsync(user, new Claim("Salt", Convert.ToBase64String(passwordHash.Salt)));//Saving salt from password hash
+
+                return user;
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
+
+        [HttpGet("get/{id:int}", Name = "GetStudent")]
         public async Task<IActionResult> GetStudent(int id)
         {
             //Variable declares
-            var student = new Students();
+            var student = new Student();
             var studentDTO = new StudentDTO();
             try
             {
                 //Getting student and user info
                 student = await context.Students
-                    .Include(studentDB => studentDB.user)
-                    .FirstOrDefaultAsync(studentDB => studentDB.id == id);
+                    .Include(studentDB => studentDB.User)
+                    .FirstOrDefaultAsync(studentDB => studentDB.Id == id);
+
+                if (student == null) 
+                {
+                    return NotFound();
+                }
 
                 studentDTO = mapper.Map<StudentDTO>(student);
             }
             catch (Exception ex)
             {
                 //Just in case, to not retorn server error
-                return StatusCode(500, "Error al cargar estudiante");
+                return StatusCode(500, "Something goes wrong getting student data");
             }
 
             return Ok(studentDTO);
         }
-
-        [HttpPost]
-        public async Task<IActionResult> CreateStudent(StudentCreationDTO studentCreationDTO)
+        
+        [HttpPatch("patch/{id:int}")]
+        public async Task<IActionResult> PatchStudent(int id, [FromBody] JsonPatchDocument<StudentPatchDTO> patchDocument)
         {
-
-            //2 Tables, 2 Maps
-            var student = mapper.Map<Students>(studentCreationDTO);
-            var user = mapper.Map<Users>(studentCreationDTO);
-
-            var usernameIsAvailable = true;
-
-            do
-            {
-                //Checking if username generated is available
-                user.username = UsernameGenerator.Genarate(student.studentname);
-                usernameIsAvailable = !context.Users.Any(userDB => userDB.username == user.username);
-            } while (usernameIsAvailable == false);
-
-            user.usertype = 's';//Assigning usertype
-
-            var mailAvailable = !context.Users.Any(u => u.mail == user.mail);
-            if (mailAvailable == false)//Checking if mail address is available
-            {
-
-                return BadRequest("Direccion de mail no disponible");
-            }
-
-            //Trying to add user
-            context.Add(user);
             try
             {
-                await context.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                //If something goes wrong
-                return StatusCode(500, "Error al crear usuario");
-            }
 
-            student.idUser = user.id;//Adding user id to student object
-
-
-            //Trying to add student
-            context.Add(student);
-            try
-            {
-                await context.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                //If something goes wrong
-                return StatusCode(500, "Error al crear estudiante");
-            }
-
-            student.user = user;//Adding user object to student property for mapper
-
-            return CreatedAtRoute("GetStudent", new { id = student.id }, mapper.Map<StudentDTO>(student));
-        }
-
-        [HttpPatch("{id:int}")]
-        public async Task<IActionResult> PatchStudent(int id, JsonPatchDocument<StudentPatchDTO> patchDocument) 
-        {
-
-            if (patchDocument == null) //Checking if doc isnt null
-            {
-                return BadRequest();
-            }
-
-            //Getting original data from student
-            var student = await context.Students.FirstOrDefaultAsync(studentDB => studentDB.id == id);
-
-            if (student == null) // Checking if client provides a real student id
-            {
-                return NotFound();
-            }
-
-            //Getting original data from user
-            var user = await context.Users.FirstOrDefaultAsync(userDB => userDB.id == student.idUser);
-
-            if (user == null) //Just in case, if user doesnt exist
-            {
-                return StatusCode(500, "Error al cargar informacion de usuario");
-            }
-
-            student.user = user;
-
-            var studentPatchDTO = mapper.Map<StudentPatchDTO>(student);
-
-            patchDocument.ApplyTo(studentPatchDTO, ModelState);//Applying patch document modified data to DTO
-
-            if (!TryValidateModel(studentPatchDTO))
-            {
-                return BadRequest(ModelState);
-            }
-
-            if (studentPatchDTO.mail != student.user.mail) //Only if mail is changed 
-            {
-
-                var availableMail = !await context.Users.AnyAsync(userDB => userDB.mail == studentPatchDTO.mail);
-
-                if (availableMail == false)
+                if (patchDocument == null) //Checking if doc isnt null
                 {
-                    return BadRequest("Direccion de mail no disponible");
+                    return BadRequest();
                 }
-            }
 
-            mapper.Map(studentPatchDTO, student);
-            mapper.Map(studentPatchDTO, user);
+                //Getting original data from student
+                var student = await context.Students
+                    .Include(studentDB => studentDB.User)
+                    .FirstOrDefaultAsync(studentDB => studentDB.Id == id);
 
-            try
-            {
+                if (student == null) // Checking if client provides a real student id
+                {
+                    return NotFound();
+                }
+
+                var studentPatchDTO = mapper.Map<StudentPatchDTO>(student);
+
+                patchDocument.ApplyTo(studentPatchDTO, ModelState);//Applying patch document modified data to DTO
+
+                if (!TryValidateModel(studentPatchDTO))
+                {
+                    if (ModelState.ContainsKey("password")
+                            && studentPatchDTO.password == student.User.PasswordHash)
+                    //Password validation could execute needlessly
+                    {
+                        ModelState.Remove("password");
+                    }
+
+                    if (ModelState.ErrorCount > 0)
+                    {
+                        return BadRequest(ModelState);
+                    }
+                }
+
+                if (studentPatchDTO.mail != student.User.Email) //Only if mail is changed 
+                {
+
+                    if (await userManager.FindByEmailAsync(studentPatchDTO.mail) != null)
+                    {
+                        return BadRequest("Mail address is not available");
+                    }
+                }
+
+                var passwordIsChanged = studentPatchDTO.password != student.User.PasswordHash;
+                //Just if password has changed
+                if (passwordIsChanged)
+                {
+                    //First, we get our current data
+                    var user = student.User;
+                    var oldClaims = await userManager.GetClaimsAsync(user);
+                    var saltClaim = oldClaims.FirstOrDefault(claimDB => claimDB.Type == "Salt");
+
+                    var oldPasswordHash = hashService.Hash(studentPatchDTO.password, Convert.FromBase64String(saltClaim.Value));
+                    //Lets check if the password that client send is diferent from the current one
+                    if (oldPasswordHash.Hash == student.User.PasswordHash)
+                    {
+                        return BadRequest("Password must be diferent of current one");
+                    }
+
+                    //If it doesnt, lets create hash from new password
+                    var newPasswordHash = hashService.Hash(studentPatchDTO.password);
+
+                    //Replacing Salt from previus hash for the new one
+                    var claimUpdate = await userManager.ReplaceClaimAsync(user, saltClaim
+                        , new Claim("Salt", Convert.ToBase64String(newPasswordHash.Salt)));
+
+                    if (!claimUpdate.Succeeded)
+                    {
+                        return StatusCode(500, "Something goes wrong updating user data");
+                    }
+
+                    studentPatchDTO.password = newPasswordHash.Hash;
+                }
+
+                mapper.Map(studentPatchDTO, student);
 
                 await context.SaveChangesAsync();
+
             }
             catch (Exception ex)
             {
-                return StatusCode(500, "Error al actualizar maestro");
+                return StatusCode(500, "Something goes wrong updating student");
             }
 
             return NoContent();
         }
-
-        [HttpPut("{id:int}")]
-        public async Task<IActionResult> PatchStudentPassword(int id, [FromBody] string psswd)
-        {
-            Regex regex = new Regex(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$");
-
-            if (!regex.IsMatch(psswd)) //Checking password format
-            {
-
-                return BadRequest("Contrasenia debe contener almenos 8 caracteres, almenos 1 letra mayuscula, almenos 1 letra minuscula, almenos 1 número y algún símbolo @$!%*?&");
-            }
-
-            //Getting initial data
-            var student = await context.Students
-                .Include(studentDB => studentDB.user)
-                .FirstOrDefaultAsync(studentDB => studentDB.id == id);
-
-            if (student == null) //Checking if student exist
-            {
-                return NotFound();
-            }
-
-            student.user.psswd = psswd;
-
-            try
-            {
-
-                await context.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-
-                return StatusCode(500, "Error al actualizar contrasenia de estudiante");
-            }
-
-            return NoContent();
-        }*/
+        
     }
 }

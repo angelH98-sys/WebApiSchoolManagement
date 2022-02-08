@@ -31,25 +31,25 @@ namespace WebApiSchoolManagement.Utilities
                 .ForMember(TeacherPatchDTO => TeacherPatchDTO.mail, options => options.MapFrom(teacher => teacher.User.Email))
                 .ForMember(TeacherPatchDTO => TeacherPatchDTO.password, options => options.MapFrom(teacher => teacher.User.PasswordHash))
                 .ReverseMap();
-            /*
-            CreateMap<Users, TeacherPatchDTO>().ReverseMap();
-
+            
 
             //Student maps
             //->Create
-            CreateMap<StudentCreationDTO, Students>();
-            CreateMap<StudentCreationDTO, Users>();
+            CreateMap<StudentCreationDTO, Student>();
+            
 
             //->Read
-            CreateMap<Students, StudentDTO>()
-                .ForMember(studentDTO => studentDTO.username, options => options.MapFrom(student => student.user.username))
-                .ForMember(studentDTO => studentDTO.mail, options => options.MapFrom(student => student.user.mail))
+            CreateMap<Student, StudentDTO>()
+                .ForMember(studentDTO => studentDTO.username, options => options.MapFrom(student => student.User.UserName))
+                .ForMember(studentDTO => studentDTO.mail, options => options.MapFrom(student => student.User.Email))
                 .ReverseMap();
-
+            
             //->Patch
-            CreateMap<Students, StudentPatchDTO>()
-                .ForMember(studentPatchDTO => studentPatchDTO.mail, options => options.MapFrom(student => student.user.mail))
+            CreateMap<Student, StudentPatchDTO>()
+                .ForMember(studentPatchDTO => studentPatchDTO.mail, options => options.MapFrom(student => student.User.Email))
+                .ForMember(studentPatchDTO => studentPatchDTO.password, options => options.MapFrom(student => student.User.PasswordHash))
                 .ReverseMap();
+            /*
             CreateMap<Users, StudentPatchDTO>().ReverseMap();
 
 
