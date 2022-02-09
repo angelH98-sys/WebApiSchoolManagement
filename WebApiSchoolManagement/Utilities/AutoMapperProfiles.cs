@@ -56,6 +56,7 @@ namespace WebApiSchoolManagement.Utilities
 
             //->Read
             CreateMap<Course, CourseDetailedDTO>().ReverseMap();
+            CreateMap<Course, CourseDTO>().ReverseMap();
 
             //->Patch
             CreateMap<CoursePatchDTO, Course>().ReverseMap();
@@ -76,6 +77,21 @@ namespace WebApiSchoolManagement.Utilities
             CreateMap<TeachersEnrolled, TeacherEnrolledByCourseDTO>()
                 .ForMember(teacherEnrolledDTO => teacherEnrolledDTO.name, options => options.MapFrom(teacherEnrolled => teacherEnrolled.Teacher.name))
                 .ForMember(teacherEnrolledDTO => teacherEnrolledDTO.username, options => options.MapFrom(teacherEnrolled => teacherEnrolled.Teacher.User.UserName));
+
+
+            //Inscription Maps
+            //->Create
+            CreateMap<Inscription, InscriptionCreationDTO>().ReverseMap();
+
+            //->Read
+            CreateMap<Inscription, InscriptionDTO>()
+                .ForMember(inscriptionDTO => inscriptionDTO.TeacherDTO, options => options.MapFrom(MapInscriptionDTOTeacherDTO))
+                .ForMember(inscriptionDTO => inscriptionDTO.CourseDTO, options => options.MapFrom(MapInscriptionDTOCourseDTO))
+                .ForMember(inscriptionDTO => inscriptionDTO.StudentDTO, options => options.MapFrom(MapInscriptionDTOStudentDTO));
+
+            //Grades Maps
+            //->Create
+            CreateMap<Grade, GradeCreationDTO>().ReverseMap();
             /*
             //TeacherEnrolled Maps
             //->Read
@@ -92,59 +108,108 @@ namespace WebApiSchoolManagement.Utilities
             //->Create
             CreateMap<InscriptionCreationDTO, Inscriptions>().ReverseMap();
 
-            //Grades Maps
-            //->Create
-            CreateMap<Grades, GradeCreationDTO>().ReverseMap();*/
+            */
+        }
+
+        private StudentDTO MapInscriptionDTOStudentDTO(Inscription inscription, InscriptionDTO inscriptionDTO)
+        {
+            var student = inscription.Student;
+
+            if (student == null) 
+            {
+                return null;
+            }
+
+            return new StudentDTO()
+            {
+                Id = student.Id,
+                name = student.name,
+                username = student.User.UserName
+            };
+        }
+
+        private CourseDTO MapInscriptionDTOCourseDTO(Inscription inscription, InscriptionDTO inscriptionDTO)
+        {
+            var course = inscription.Course;
+
+            if (course == null) 
+            {
+                return null;
+            }
+
+            return new CourseDTO()
+            {
+                Id = course.Id,
+                name = course.name,
+                status = course.status
+            };
+        }
+
+        private TeacherDTO MapInscriptionDTOTeacherDTO(Inscription inscription, InscriptionDTO inscriptionDTO)
+        {
+            var teacher = inscription.Teacher;
+
+            if (teacher == null) 
+            {
+                return null;
+            }
+
+            return new TeacherDTO()
+            {
+                Id = teacher.Id,
+                name = teacher.name,
+                username = teacher.User.UserName
+            };
         }
         /*
-        private List<AssignmentByCourseDTO> MapAssignmentByCourse(Courses course, CourseDetailedDTO courseDetailedDTO)
-        {
+private List<AssignmentByCourseDTO> MapAssignmentByCourse(Courses course, CourseDetailedDTO courseDetailedDTO)
+{
 
-            if (course.assignments == null) 
-            {
-                return null;
-            }
+   if (course.assignments == null) 
+   {
+       return null;
+   }
 
-            var result = new List<AssignmentByCourseDTO>();
+   var result = new List<AssignmentByCourseDTO>();
 
-            foreach (Assignments assgn in course.assignments) 
-            {
-                result.Add(new AssignmentByCourseDTO 
-                {
-                    id = assgn.id,
-                    assignmentname = assgn.assignmentname,
-                    coursevalue = assgn.coursevalue,
-                    assignmentstatus = assgn.assignmentstatus
-                });
-            }
+   foreach (Assignments assgn in course.assignments) 
+   {
+       result.Add(new AssignmentByCourseDTO 
+       {
+           id = assgn.id,
+           assignmentname = assgn.assignmentname,
+           coursevalue = assgn.coursevalue,
+           assignmentstatus = assgn.assignmentstatus
+       });
+   }
 
-            return result;
-        }
+   return result;
+}
 
-        private List<TeacherEnrolledByCourseDTO> MapTeacherEnrolledByCourse(Courses course, CourseDetailedDTO courseDetailedDTO)
-        {
-            if (course.teacherEnrolleds == null) 
-            {
-                return null;
-            }
+private List<TeacherEnrolledByCourseDTO> MapTeacherEnrolledByCourse(Courses course, CourseDetailedDTO courseDetailedDTO)
+{
+   if (course.teacherEnrolleds == null) 
+   {
+       return null;
+   }
 
-            var result = new List<TeacherEnrolledByCourseDTO>();
+   var result = new List<TeacherEnrolledByCourseDTO>();
 
-            foreach (TeachersEnrolleds tchenr in course.teacherEnrolleds)
-            {
+   foreach (TeachersEnrolleds tchenr in course.teacherEnrolleds)
+   {
 
-                result.Add(new TeacherEnrolledByCourseDTO 
-                {
-                    id = tchenr.id,
-                    enrolledstatus = tchenr.enrolledstatus,
-                    idTeacher = tchenr.idTeacher,
-                    teachername = tchenr.teacher.teachername,
-                    username = tchenr.teacher.user.username
-                });;
-            }
+       result.Add(new TeacherEnrolledByCourseDTO 
+       {
+           id = tchenr.id,
+           enrolledstatus = tchenr.enrolledstatus,
+           idTeacher = tchenr.idTeacher,
+           teachername = tchenr.teacher.teachername,
+           username = tchenr.teacher.user.username
+       });;
+   }
 
-            return result;
-        }
-        */
+   return result;
+}
+*/
     }
 }

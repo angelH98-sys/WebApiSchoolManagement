@@ -18,42 +18,60 @@ namespace WebApiSchoolManagement.Controllers
             this.context = context;
             this.mapper = mapper;
         }
-        /*
-        [HttpPost]
+        
+        [HttpPost("create")]
         public async Task<IActionResult> CreateGrade([FromBody] GradeCreationDTO gradeCreationDTO) 
         {
+
+            //Checking if grade already exist
+            var gradeAlreadyExist = await context.Grades.Where(gradeDB =>
+                gradeDB.AssignmentId == gradeCreationDTO.AssignmentId &&
+                gradeDB.InscriptionId == gradeCreationDTO.InscriptionId)
+                .AnyAsync();
+
+            if (gradeAlreadyExist)
+            {
+                return BadRequest("Grade already exist for provided data");
+            }
+
             //Getting assignment and inscription to the process
 
-            //For the assignment, i just need course value to calculate the percentage in grade object
-            //grade.gradevalue
-            var assignment = await context.Assignments
-                .Where(assignmentDB => assignmentDB.id == gradeCreationDTO.idAssignment)
-                .Select(assgn => new Assignments { coursevalue = assgn.coursevalue })
-                .FirstOrDefaultAsync();
-
             var inscription = await context.Inscriptions
-                .Where(inscriptionDB => inscriptionDB.id == gradeCreationDTO.idInscription &&
-                inscriptionDB.inscriptionstatus == "Active")
+                .Where(inscriptionDB => inscriptionDB.Id == gradeCreationDTO.InscriptionId)
                 .FirstOrDefaultAsync();
 
-            if (assignment == null | inscription == null)
+            if (inscription == null)
             {
                 return NotFound();
             }
 
-            //Checking if grade already exist
-            var gradeAlreadyExist = await context.Grades.Where(gradeDB =>
-                gradeDB.idAssignment == gradeCreationDTO.idAssignment &&
-                gradeDB.idInscription == gradeCreationDTO.idInscription)
-                .AnyAsync();
-
-            if (gradeAlreadyExist) 
+            if (inscription.status != "Active") 
             {
-                return BadRequest("Nota ya existente");
+                return BadRequest("Unable to create a grade of an inactive inscription");
             }
 
+            //For the assignment, i just need course value to calculate the percentage in grade object
+            //grade.gradevalue
+
+            var assignment = await context.Assignments
+                .Where(assignmentDB => assignmentDB.Id == gradeCreationDTO.AssignmentId 
+                                        && assignmentDB.CourseId == inscription.CourseId)
+                .Select(assgn => new Assignment { coursevalue = assgn.coursevalue, status = assgn.status })
+                .FirstOrDefaultAsync();
+
+            if (assignment == null) 
+            {
+                return NotFound();
+            }
+
+            if (assignment.status != "Active") 
+            {
+                return BadRequest("Unable to create a grade of an inactive assignment");
+            }
+            
+
             //Create a grade object
-            var grade = mapper.Map<Grades>(gradeCreationDTO);
+            var grade = mapper.Map<Grade>(gradeCreationDTO);
 
             grade.gradevalue = grade.grade * assignment.coursevalue / 10;
 
@@ -61,7 +79,7 @@ namespace WebApiSchoolManagement.Controllers
 
             inscription.progress += assignment.coursevalue;
 
-            inscription.avarage = updateInscriptionAvarage(inscription.id, grade.grade);
+            inscription.avarage = updateInscriptionAvarage(inscription.Id, grade.grade);
 
             context.Add(grade);
 
@@ -73,12 +91,12 @@ namespace WebApiSchoolManagement.Controllers
         private decimal updateInscriptionAvarage(int inscriptionId, decimal grade)
         {
             var grades = context.Grades
-                .Where(gradeDB => gradeDB.idInscription == inscriptionId)
-                .Select(grd => new Grades() { grade = grd.grade })
+                .Where(gradeDB => gradeDB.InscriptionId == inscriptionId)
+                .Select(grd => new Grade() { grade = grd.grade })
                 .ToList();
 
             decimal avarage = grade;
-            foreach (Grades grd in grades) 
+            foreach (Grade grd in grades) 
             {
                 avarage += grd.grade;   
             }
@@ -86,6 +104,6 @@ namespace WebApiSchoolManagement.Controllers
             avarage = avarage / (grades.Count() + 1);
 
             return avarage;
-        }*/
+        }
     }
 }
