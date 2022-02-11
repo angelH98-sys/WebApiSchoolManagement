@@ -34,7 +34,7 @@ namespace WebApiSchoolManagement
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(
-                            Encoding.UTF8.GetBytes(Configuration["llavejwt"])),
+                            Encoding.UTF8.GetBytes(Configuration["jwtkey"])),
                     ClockSkew = TimeSpan.Zero
                 });
 
@@ -71,11 +71,11 @@ namespace WebApiSchoolManagement
                 .AddEntityFrameworkStores<ApplicationDBContext>()
                 .AddDefaultTokenProviders();
 
-            /*services.AddAuthorization(opciones =>
+            services.AddAuthorization(opciones =>
             {
-                opciones.AddPolicy("EsAdmin", politica => politica.RequireClaim("esAdmin"));
-                opciones.AddPolicy("EsVendedor", politica => politica.RequireClaim("esVendedor"));
-            });*/
+                opciones.AddPolicy("Admin", politica => politica.RequireClaim("Admin"));
+                opciones.AddPolicy("Teacher", politica => politica.RequireClaim("Teacher"));
+            });
 
             services.AddTransient<HashService>();
         }

@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
@@ -13,6 +15,7 @@ namespace WebApiSchoolManagement.Controllers
 {
     [ApiController]
     [Route("api/students")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class StudentsController : ControllerBase
     {
         private readonly ApplicationDBContext context;
@@ -42,13 +45,6 @@ namespace WebApiSchoolManagement.Controllers
             var student = mapper.Map<Student>(studentCreationDTO);
             try
             {
-                //Starting with student mapping
-                var username = "";
-                do
-                {
-                    //Checking if username generated is available
-                    username = UsernameGenerator.Genarate(student.name);
-                } while (await userManager.FindByNameAsync(username) != null);
 
 
                 var isMailAvailable = await userManager.FindByEmailAsync(studentCreationDTO.mail);
@@ -58,7 +54,7 @@ namespace WebApiSchoolManagement.Controllers
                     return BadRequest("Mail address not available");
                 }
 
-                student.User = await CreateUser(username, studentCreationDTO.mail, studentCreationDTO.password);
+                student.User = await CreateUser(studentCreationDTO.mail, studentCreationDTO.password);
 
                 if (student.User == null)
                     //If user creation is successfull
@@ -83,7 +79,7 @@ namespace WebApiSchoolManagement.Controllers
 
         }
 
-        private async Task<IdentityUser> CreateUser(string username, string mail, string password)
+        private async Task<IdentityUser> CreateUser(string mail, string password)
         /*Method to create Users in Identity Framework Tables
             -AspNetRoles: to create user roles as Admin, Teacher or Student
             -AspNetUsers: to create users
@@ -97,7 +93,7 @@ namespace WebApiSchoolManagement.Controllers
                 IdentityUser user = new IdentityUser()
                 //First, create an IdentityUser instance
                 {
-                    UserName = username,
+                    UserName = mail,
                     Email = mail
                 };
 
@@ -117,6 +113,7 @@ namespace WebApiSchoolManagement.Controllers
                 await userManager.AddToRoleAsync(user, role);//Assigning role to the user
 
                 await userManager.AddClaimAsync(user, new Claim("Salt", Convert.ToBase64String(passwordHash.Salt)));//Saving salt from password hash
+
 
                 return user;
             }
@@ -236,6 +233,10 @@ namespace WebApiSchoolManagement.Controllers
                 }
 
                 mapper.Map(studentPatchDTO, student);
+
+                student.User.NormalizedEmail = student.User.Email.ToUpper();
+                student.User.UserName = student.User.Email.ToUpper();
+                student.User.NormalizedUserName = student.User.Email.ToUpper();
 
                 await context.SaveChangesAsync();
 

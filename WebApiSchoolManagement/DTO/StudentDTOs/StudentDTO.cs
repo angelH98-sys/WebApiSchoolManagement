@@ -6,7 +6,6 @@
         public string name{ get; set; }
         public int courseyear { get; set; }
         public string UserId { get; set; }
-        public string username { get; set; }
         public string mail { get; set; }
 
     }

@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApiSchoolManagement.DTO.InscriptionDTOs;
@@ -8,6 +10,8 @@ namespace WebApiSchoolManagement.Controllers
 {
     [ApiController]
     [Route("api/inscription")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "Admin")]
+
     public class InscriptionsController : ControllerBase
     {
         private readonly ApplicationDBContext context;
@@ -51,6 +55,34 @@ namespace WebApiSchoolManagement.Controllers
                 if (!isValidCourse)
                 {
                     return BadRequest("Unable to enroll an inactive or nonexistent teacher");
+                }
+
+                //Checking if teacher is enrolled to course
+                var irTeacherEnroll = await context.TeachersEnrolleds.AnyAsync(enrollDB =>
+                                            enrollDB.TeacherId == inscriptionCreationDTO.TeacherId
+                                            && enrollDB.CourseId == inscriptionCreationDTO.CourseId
+                                            && enrollDB.status == "Active");
+
+                if (!irTeacherEnroll) 
+                {
+                    return BadRequest("Unable to enroll teacher with specified course");
+                }
+
+
+                //Checking if student has the same courseyear as course
+                var studentCourseYear = await context.Students
+                    .Where(studentDB => studentDB.Id == inscriptionCreationDTO.StudentId)
+                    .Select(std => new Student() { courseyear = std.courseyear })
+                    .FirstOrDefaultAsync();
+
+                var courseCourseYear = await context.Courses
+                    .Where(courseDB => courseDB.Id == inscriptionCreationDTO.CourseId)
+                    .Select(crs => new Course() { courseyear = crs.courseyear })
+                    .FirstOrDefaultAsync();
+
+                if (studentCourseYear.courseyear != courseCourseYear.courseyear) 
+                {
+                    return BadRequest("Student unable to enroll to course");
                 }
 
 

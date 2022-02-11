@@ -21,11 +21,8 @@ namespace WebApiSchoolManagement.Utilities
             
             //->Read
             CreateMap<Teacher, TeacherDetailedDTO>()
-                .ForMember(teacherDTO => teacherDTO.username, options => options.MapFrom(teacher => teacher.User.UserName))
                 .ForMember(teacherDTO => teacherDTO.mail, options => options.MapFrom(teacher => teacher.User.Email));
-            CreateMap<Teacher, TeacherDTO>()
-                .ForMember(teacherDTO => teacherDTO.username, options => options.MapFrom(teacher => teacher.User.UserName));
-            
+            CreateMap<Teacher, TeacherDTO>();
             //->Patch
             CreateMap<Teacher, TeacherPatchDTO>()
                 .ForMember(TeacherPatchDTO => TeacherPatchDTO.mail, options => options.MapFrom(teacher => teacher.User.Email))
@@ -40,7 +37,6 @@ namespace WebApiSchoolManagement.Utilities
 
             //->Read
             CreateMap<Student, StudentDTO>()
-                .ForMember(studentDTO => studentDTO.username, options => options.MapFrom(student => student.User.UserName))
                 .ForMember(studentDTO => studentDTO.mail, options => options.MapFrom(student => student.User.Email))
                 .ReverseMap();
             
@@ -92,23 +88,7 @@ namespace WebApiSchoolManagement.Utilities
             //Grades Maps
             //->Create
             CreateMap<Grade, GradeCreationDTO>().ReverseMap();
-            /*
-            //TeacherEnrolled Maps
-            //->Read
-            CreateMap<Courses, CourseDetailedDTO>()
-                .ForMember(courseDetailedDTO => courseDetailedDTO.assignments, options => options.MapFrom(MapAssignmentByCourse))
-                .ForMember(courseDetailedDTO => courseDetailedDTO.teacherEnrolleds, options => options.MapFrom(MapTeacherEnrolledByCourse));
-
-            //->Create
-            CreateMap<CourseCreationDTO, Courses>().ReverseMap();
-
             
-
-            //Inscriptions Maps
-            //->Create
-            CreateMap<InscriptionCreationDTO, Inscriptions>().ReverseMap();
-
-            */
         }
 
         private StudentDTO MapInscriptionDTOStudentDTO(Inscription inscription, InscriptionDTO inscriptionDTO)
@@ -123,8 +103,7 @@ namespace WebApiSchoolManagement.Utilities
             return new StudentDTO()
             {
                 Id = student.Id,
-                name = student.name,
-                username = student.User.UserName
+                name = student.name
             };
         }
 
@@ -157,8 +136,7 @@ namespace WebApiSchoolManagement.Utilities
             return new TeacherDTO()
             {
                 Id = teacher.Id,
-                name = teacher.name,
-                username = teacher.User.UserName
+                name = teacher.name
             };
         }
         /*

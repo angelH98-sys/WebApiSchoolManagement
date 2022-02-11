@@ -1,7 +1,11 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.IdentityModel.Tokens.Jwt;
 using WebApiSchoolManagement.DTO.AssignmentDTOs;
 using WebApiSchoolManagement.Models;
 
@@ -9,17 +13,24 @@ namespace WebApiSchoolManagement.Controllers
 {
     [ApiController]
     [Route("api/courses/{courseId:int}/assignments")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+
     public class AssignmentsController : ControllerBase
     {
         private readonly ApplicationDBContext context;
         private readonly IMapper mapper;
+        private readonly UserManager<IdentityUser> userManager;
+        private IdentityUser userLogged = new IdentityUser();
+        private string role = "";
 
         public AssignmentsController(
             ApplicationDBContext context,
-            IMapper mapper)
+            IMapper mapper,
+            UserManager<IdentityUser> userManager)
         {
             this.context = context;
             this.mapper = mapper;
+            this.userManager = userManager;
         }
 
         [HttpPost("create")]
@@ -35,6 +46,22 @@ namespace WebApiSchoolManagement.Controllers
                 if (existCourse == false)
                 {
                     return NotFound();
+                }
+
+                await GetUserLogged();
+
+                if (role == "Teacher") 
+                {
+
+                    var isTeacherEnrolledWithCourse = await context.TeachersEnrolleds.AnyAsync(enrollDB =>
+                                                        enrollDB.CourseId == courseId
+                                                        && enrollDB.Teacher.User.Id == userLogged.Id
+                                                        && enrollDB.status == "Active");
+
+                    if (!isTeacherEnrolledWithCourse) 
+                    {
+                        return Unauthorized();
+                    }
                 }
 
                 //Setting assignment objetc
@@ -150,6 +177,29 @@ namespace WebApiSchoolManagement.Controllers
             }
             return NoContent();
         }
-       
+
+        private async Task<ActionResult> GetUserLogged()
+        {
+            Request.Headers.TryGetValue("Authorization", out var headerValue);
+
+            var jwt = headerValue[0].Split(" ")[1];
+
+            var handler = new JwtSecurityTokenHandler();
+            var jsonToken = handler.ReadToken(jwt);
+            var tokenS = jsonToken as JwtSecurityToken;
+
+            var mail = tokenS.Claims.First(claim => claim.Type == "mail").Value;
+
+            userLogged = await userManager.FindByEmailAsync(mail);
+
+            if (tokenS.Claims.Any(claim => claim.Type == "Admin"))
+                role = "Admin";
+
+            if(tokenS.Claims.Any(claim => claim.Type == "Teacher"))
+                role = "Teacher";
+
+            return Ok();
+        }
+
     }
 }

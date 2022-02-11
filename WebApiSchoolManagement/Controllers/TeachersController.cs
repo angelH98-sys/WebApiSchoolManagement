@@ -1,9 +1,12 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -16,6 +19,7 @@ namespace WebApiSchoolManagement.Controllers
 {
     [ApiController]
     [Route("api/teachers")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class TeachersController : ControllerBase
     {
         private readonly ApplicationDBContext context;
@@ -27,6 +31,7 @@ namespace WebApiSchoolManagement.Controllers
         private readonly HashService hashService;
         private readonly RoleManager<IdentityRole> roleManager;
         private string role;
+        private IdentityUser userLogged = new IdentityUser();
 
         public TeachersController(
             ApplicationDBContext context,
@@ -46,25 +51,28 @@ namespace WebApiSchoolManagement.Controllers
             this.dataProtectionProvider = dataProtectionProvider;
             this.hashService = hashService;
             this.roleManager = roleManager;
-            this.role = "Teacher";
+            role = "Teacher";
+
         }
 
         [HttpPost("create/admin")]
+        [AllowAnonymous]
         public async Task<IActionResult> CreateTeacherAdmin([FromBody] TeacherCreationDTO teacherCreationDTO) 
         {
         
             var existAdmin = await roleManager.FindByNameAsync("Admin");
+            role = "Admin";
+
             //If admin role dont even exist, means that an Admin User niether
             if (existAdmin == null) 
             {
-                role = "Admin";
                 return await CreateTeacher(teacherCreationDTO);
             }
 
             var isAdminRoleAlreadyTaken = await userManager.GetUsersInRoleAsync("Admin");
             //If admin role exist, lets check if exist an admin user
             if (isAdminRoleAlreadyTaken.Count > 0) 
-            {
+            {   
                 return BadRequest("Admin user already exist");
             }
 
@@ -72,20 +80,13 @@ namespace WebApiSchoolManagement.Controllers
         }
 
         [HttpPost("create")]
+        [Authorize(Policy = "Admin")]
         public async Task<ActionResult> CreateTeacher([FromBody] TeacherCreationDTO teacherCreationDTO)
         {
             try
             {
                 //First, execite teacher map
                 Teacher teacher = mapper.Map<Teacher>(teacherCreationDTO);
-
-                var username = "";
-                do//Checking if username is available
-                {
-                    //Generating an username
-                    username = UsernameGenerator.Genarate(teacher.name);
-
-                } while (await userManager.FindByNameAsync(username) != null);
 
                 //Checking if mail is available
                 var isMailAvailable = await userManager.FindByEmailAsync(teacherCreationDTO.mail);
@@ -94,7 +95,7 @@ namespace WebApiSchoolManagement.Controllers
                     return BadRequest("Mail address is not available");
                 }
 
-                var user = await CreateUser(username, teacherCreationDTO.mail, teacherCreationDTO.password);
+                var user = await CreateUser(teacherCreationDTO.mail, teacherCreationDTO.password);
 
                 if (user.Value == null)
                 {
@@ -123,21 +124,21 @@ namespace WebApiSchoolManagement.Controllers
             }
 
         }
-        private async Task<ActionResult<IdentityUser>> CreateUser(string username, string mail, string password)
-            /*Method to create Users in Identity Framework Tables
-                -AspNetRoles: to create user roles as Admin, Teacher or Student
-                -AspNetUsers: to create users
-                -AspNetUserClaims: to create a user claim to save password salt
-                -AspnetUserRole: to asign a role to a user
-             */
+        private async Task<ActionResult<IdentityUser>> CreateUser(string mail, string password)
+        /*Method to create Users in Identity Framework Tables
+            -AspNetRoles: to create user roles as Admin, Teacher or Student
+            -AspNetUsers: to create users
+            -AspNetUserClaims: to create a user claim to save password salt
+            -AspnetUserRole: to asign a role to a user
+         */
         {
             try
             {
 
                 IdentityUser user = new IdentityUser()
-                    //First, create an IdentityUser instance
+                //First, create an IdentityUser instance
                 {
-                    UserName = username,
+                    UserName = mail,
                     Email = mail
                 };
 
@@ -160,7 +161,7 @@ namespace WebApiSchoolManagement.Controllers
 
                 return user;
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 return null;
             }
@@ -169,6 +170,7 @@ namespace WebApiSchoolManagement.Controllers
         [HttpGet("get/{id:int}", Name = "GetTeacher")]
         public async Task<ActionResult<TeacherDetailedDTO>> GetTeacher(int id)
         {
+            await GetUserLogged();
             try
             {
 
@@ -177,6 +179,12 @@ namespace WebApiSchoolManagement.Controllers
                 if (teacher == null)
                 {
                     return NotFound();
+                }
+
+                //User logged validation: just teacher from id can request their data
+                if (role == "Teacher" && teacher.UserId != userLogged.Id)
+                {
+                    return Unauthorized();
                 }
 
                 teacher.User = await userManager.FindByIdAsync(teacher.UserId);
@@ -211,6 +219,8 @@ namespace WebApiSchoolManagement.Controllers
         [HttpGet("get/all")]
         public async Task<List<TeacherDTO>> GetAllTeachers()
         {
+            GetUserLogged();
+
             var teachers = await context.Teachers
                 .Include(teacherDB => teacherDB.User)
                 .ToListAsync();
@@ -228,16 +238,22 @@ namespace WebApiSchoolManagement.Controllers
         {
             try
             {
+                await GetUserLogged();
+
                 if (patchDocument == null)//Checking if patch document is missing 
                 {
                     return BadRequest();
                 }
 
-                var teacher = await context.Teachers.FirstOrDefaultAsync(teacherDB => teacherDB.Id == id);
+                var teacher = await context.Teachers
+                    .Include(teacherDB => teacherDB.User)
+                    .Where(teacherDB => teacherDB.Id == id)
+                    .FirstOrDefaultAsync();
 
-                if (teacher == null) // Checking if client provides a real teacher id
+                //User logged validation: just teacher from id can patch their data
+                if (role != "Teacher" || teacher.UserId != userLogged.Id)
                 {
-                    return NotFound();
+                    return Unauthorized();
                 }
 
                 teacher.User = await userManager.FindByIdAsync(teacher.UserId);
@@ -308,6 +324,10 @@ namespace WebApiSchoolManagement.Controllers
                 }
 
                 mapper.Map(teacherPatchDTO, teacher);
+
+                teacher.User.NormalizedEmail = teacher.User.Email.ToUpper();
+                teacher.User.UserName = teacher.User.Email.ToUpper();
+                teacher.User.NormalizedUserName = teacher.User.Email.ToUpper();
             
                 await context.SaveChangesAsync();
             }   
@@ -317,6 +337,26 @@ namespace WebApiSchoolManagement.Controllers
             }
 
             return NoContent();
+        }
+
+        private async Task<ActionResult> GetUserLogged() 
+        {
+            Request.Headers.TryGetValue("Authorization", out var headerValue);
+
+            var jwt = headerValue[0].Split(" ")[1];
+
+            var handler = new JwtSecurityTokenHandler();
+            var jsonToken = handler.ReadToken(jwt);
+            var tokenS = jsonToken as JwtSecurityToken;
+
+            var mail = tokenS.Claims.First(claim => claim.Type == "mail").Value;
+
+            userLogged = await userManager.FindByEmailAsync(mail);
+
+            if (tokenS.Claims.Any(claim => claim.Type == "Admin"))
+                role = "Admin";
+
+            return Ok();
         }
 
     }
