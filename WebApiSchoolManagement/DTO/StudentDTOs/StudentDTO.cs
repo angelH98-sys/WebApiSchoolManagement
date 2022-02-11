@@ -2,11 +2,10 @@
 {
     public class StudentDTO
     {
-        public int id { get; set; }
-        public string studentname { get; set; }
+        public int Id { get; set; }
+        public string name{ get; set; }
         public int courseyear { get; set; }
-        public int idUser { get; set; }
-        public string username { get; set; }
+        public string UserId { get; set; }
         public string mail { get; set; }
 
     }

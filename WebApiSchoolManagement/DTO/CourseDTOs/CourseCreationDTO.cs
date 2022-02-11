@@ -5,9 +5,9 @@ namespace WebApiSchoolManagement.DTO.CourseDTOs
     public class CourseCreationDTO
     {
         [Required]
-        public string coursename { get; set; }
+        public string name { get; set; }
         [Required]
-        [Range(1, 9, ErrorMessage = "Anio de curso debe ser entre {1} y {2}")]
+        [Range(1, 9)]
         public int courseyear { get; set; }
     }
 }

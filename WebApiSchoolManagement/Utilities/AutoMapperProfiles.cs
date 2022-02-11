@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Identity;
 using WebApiSchoolManagement.DTO.AssignmentDTOs;
 using WebApiSchoolManagement.DTO.CourseDTOs;
 using WebApiSchoolManagement.DTO.GradeDTOs;
@@ -16,111 +17,177 @@ namespace WebApiSchoolManagement.Utilities
         {
             //Teacher maps
             //->Create
-            CreateMap<TeacherCreationDTO, Teachers>();
-            CreateMap<TeacherCreationDTO, Users>();
-
-            //->Read
-            CreateMap<Teachers, TeacherDTO>()
-                .ForMember(teacherDTO => teacherDTO.username, options => options.MapFrom(teacher => teacher.user.username))
-                .ForMember(teacherDTO => teacherDTO.mail, options => options.MapFrom(teacher => teacher.user.mail));
+            CreateMap<TeacherCreationDTO, Teacher>();
             
+            //->Read
+            CreateMap<Teacher, TeacherDetailedDTO>()
+                .ForMember(teacherDTO => teacherDTO.mail, options => options.MapFrom(teacher => teacher.User.Email));
+            CreateMap<Teacher, TeacherDTO>();
             //->Patch
-            CreateMap<Teachers, TeacherPatchDTO>()
-                .ForMember(TeacherPatchDTO => TeacherPatchDTO.mail, options => options.MapFrom(teacher => teacher.user.mail))
+            CreateMap<Teacher, TeacherPatchDTO>()
+                .ForMember(TeacherPatchDTO => TeacherPatchDTO.mail, options => options.MapFrom(teacher => teacher.User.Email))
+                .ForMember(TeacherPatchDTO => TeacherPatchDTO.password, options => options.MapFrom(teacher => teacher.User.PasswordHash))
                 .ReverseMap();
-            CreateMap<Users, TeacherPatchDTO>().ReverseMap();
-
+            
 
             //Student maps
             //->Create
-            CreateMap<StudentCreationDTO, Students>();
-            CreateMap<StudentCreationDTO, Users>();
+            CreateMap<StudentCreationDTO, Student>();
+            
 
             //->Read
-            CreateMap<Students, StudentDTO>()
-                .ForMember(studentDTO => studentDTO.username, options => options.MapFrom(student => student.user.username))
-                .ForMember(studentDTO => studentDTO.mail, options => options.MapFrom(student => student.user.mail))
+            CreateMap<Student, StudentDTO>()
+                .ForMember(studentDTO => studentDTO.mail, options => options.MapFrom(student => student.User.Email))
                 .ReverseMap();
+            
+            //->Patch
+            CreateMap<Student, StudentPatchDTO>()
+                .ForMember(studentPatchDTO => studentPatchDTO.mail, options => options.MapFrom(student => student.User.Email))
+                .ForMember(studentPatchDTO => studentPatchDTO.password, options => options.MapFrom(student => student.User.PasswordHash))
+                .ReverseMap();
+            
+            //Course maps
+            //->Create
+            CreateMap<CourseCreationDTO, Course>();
+
+            //->Read
+            CreateMap<Course, CourseDetailedDTO>().ReverseMap();
+            CreateMap<Course, CourseDTO>().ReverseMap();
 
             //->Patch
-            CreateMap<Students, StudentPatchDTO>()
-                .ForMember(studentPatchDTO => studentPatchDTO.mail, options => options.MapFrom(student => student.user.mail))
-                .ReverseMap();
-            CreateMap<Users, StudentPatchDTO>().ReverseMap();
+            CreateMap<CoursePatchDTO, Course>().ReverseMap();
+
+            //Assignments Maps
+            //->Read
+            CreateMap<Assignment, AssignmentByCourseDTO>().ReverseMap();
+
+            //->Create
+            CreateMap<AssignmentCreationDTO, Assignment>().ReverseMap();
+
+            //->Patch
+            CreateMap<AssignmentPatchDTO, Assignment>().ReverseMap();
 
 
             //TeacherEnrolled Maps
             //->Read
-            CreateMap<Courses, CourseDetailedDTO>()
-                .ForMember(courseDetailedDTO => courseDetailedDTO.assignments, options => options.MapFrom(MapAssignmentByCourse))
-                .ForMember(courseDetailedDTO => courseDetailedDTO.teacherEnrolleds, options => options.MapFrom(MapTeacherEnrolledByCourse));
+            CreateMap<TeachersEnrolled, TeacherEnrolledByCourseDTO>()
+                .ForMember(teacherEnrolledDTO => teacherEnrolledDTO.name, options => options.MapFrom(teacherEnrolled => teacherEnrolled.Teacher.name))
+                .ForMember(teacherEnrolledDTO => teacherEnrolledDTO.username, options => options.MapFrom(teacherEnrolled => teacherEnrolled.Teacher.User.UserName));
 
+
+            //Inscription Maps
             //->Create
-            CreateMap<CourseCreationDTO, Courses>().ReverseMap();
+            CreateMap<Inscription, InscriptionCreationDTO>().ReverseMap();
 
-            //Assignments Maps
             //->Read
-            CreateMap<Assignments, AssignmentByCourseDTO>();
-
-            //->Create
-            CreateMap<AssignmentCreationDTO, Assignments>().ReverseMap();
-
-            //Inscriptions Maps
-            //->Create
-            CreateMap<InscriptionCreationDTO, Inscriptions>().ReverseMap();
+            CreateMap<Inscription, InscriptionDTO>()
+                .ForMember(inscriptionDTO => inscriptionDTO.TeacherDTO, options => options.MapFrom(MapInscriptionDTOTeacherDTO))
+                .ForMember(inscriptionDTO => inscriptionDTO.CourseDTO, options => options.MapFrom(MapInscriptionDTOCourseDTO))
+                .ForMember(inscriptionDTO => inscriptionDTO.StudentDTO, options => options.MapFrom(MapInscriptionDTOStudentDTO));
 
             //Grades Maps
             //->Create
-            CreateMap<Grades, GradeCreationDTO>().ReverseMap();
+            CreateMap<Grade, GradeCreationDTO>().ReverseMap();
+            
         }
 
-        private List<AssignmentByCourseDTO> MapAssignmentByCourse(Courses course, CourseDetailedDTO courseDetailedDTO)
+        private StudentDTO MapInscriptionDTOStudentDTO(Inscription inscription, InscriptionDTO inscriptionDTO)
         {
+            var student = inscription.Student;
 
-            if (course.assignments == null) 
+            if (student == null) 
             {
                 return null;
             }
 
-            var result = new List<AssignmentByCourseDTO>();
-
-            foreach (Assignments assgn in course.assignments) 
+            return new StudentDTO()
             {
-                result.Add(new AssignmentByCourseDTO 
-                {
-                    id = assgn.id,
-                    assignmentname = assgn.assignmentname,
-                    coursevalue = assgn.coursevalue,
-                    assignmentstatus = assgn.assignmentstatus
-                });
-            }
-
-            return result;
+                Id = student.Id,
+                name = student.name
+            };
         }
 
-        private List<TeacherEnrolledByCourseDTO> MapTeacherEnrolledByCourse(Courses course, CourseDetailedDTO courseDetailedDTO)
+        private CourseDTO MapInscriptionDTOCourseDTO(Inscription inscription, InscriptionDTO inscriptionDTO)
         {
-            if (course.teacherEnrolleds == null) 
+            var course = inscription.Course;
+
+            if (course == null) 
             {
                 return null;
             }
 
-            var result = new List<TeacherEnrolledByCourseDTO>();
-
-            foreach (TeachersEnrolleds tchenr in course.teacherEnrolleds)
+            return new CourseDTO()
             {
+                Id = course.Id,
+                name = course.name,
+                status = course.status
+            };
+        }
 
-                result.Add(new TeacherEnrolledByCourseDTO 
-                {
-                    id = tchenr.id,
-                    enrolledstatus = tchenr.enrolledstatus,
-                    idTeacher = tchenr.idTeacher,
-                    teachername = tchenr.teacher.teachername,
-                    username = tchenr.teacher.user.username
-                });;
+        private TeacherDTO MapInscriptionDTOTeacherDTO(Inscription inscription, InscriptionDTO inscriptionDTO)
+        {
+            var teacher = inscription.Teacher;
+
+            if (teacher == null) 
+            {
+                return null;
             }
 
-            return result;
+            return new TeacherDTO()
+            {
+                Id = teacher.Id,
+                name = teacher.name
+            };
         }
+        /*
+private List<AssignmentByCourseDTO> MapAssignmentByCourse(Courses course, CourseDetailedDTO courseDetailedDTO)
+{
+
+   if (course.assignments == null) 
+   {
+       return null;
+   }
+
+   var result = new List<AssignmentByCourseDTO>();
+
+   foreach (Assignments assgn in course.assignments) 
+   {
+       result.Add(new AssignmentByCourseDTO 
+       {
+           id = assgn.id,
+           assignmentname = assgn.assignmentname,
+           coursevalue = assgn.coursevalue,
+           assignmentstatus = assgn.assignmentstatus
+       });
+   }
+
+   return result;
+}
+
+private List<TeacherEnrolledByCourseDTO> MapTeacherEnrolledByCourse(Courses course, CourseDetailedDTO courseDetailedDTO)
+{
+   if (course.teacherEnrolleds == null) 
+   {
+       return null;
+   }
+
+   var result = new List<TeacherEnrolledByCourseDTO>();
+
+   foreach (TeachersEnrolleds tchenr in course.teacherEnrolleds)
+   {
+
+       result.Add(new TeacherEnrolledByCourseDTO 
+       {
+           id = tchenr.id,
+           enrolledstatus = tchenr.enrolledstatus,
+           idTeacher = tchenr.idTeacher,
+           teachername = tchenr.teacher.teachername,
+           username = tchenr.teacher.user.username
+       });;
+   }
+
+   return result;
+}
+*/
     }
 }

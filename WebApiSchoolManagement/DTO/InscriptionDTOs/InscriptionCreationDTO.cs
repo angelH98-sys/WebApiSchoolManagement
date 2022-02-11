@@ -5,10 +5,10 @@ namespace WebApiSchoolManagement.DTO.InscriptionDTOs
     public class InscriptionCreationDTO
     {
         [Required]
-        public int idStudent { get; set; }
+        public int StudentId { get; set; }
         [Required]
-        public int idCourse { get; set; }
+        public int CourseId { get; set; }
         [Required]
-        public int idTeacher { get; set; }
+        public int TeacherId { get; set; }
     }
 }
